@@ -25,7 +25,7 @@ def _load_two_images_from_folder(folder):
     return img1, img2, paths[0], paths[1]
 
 
-def _draw_inlier_matches(img1, img2, kp1, kp2, matches, inlier_mask, max_draw=200):
+def _draw_inlier_matches(img1, img2, kp1, kp2, matches, inlier_mask, max_draw=1000):
     # Build inlier match list
     inlier_matches = [m for m, keep in zip(matches, inlier_mask.tolist()) if keep]
     inlier_matches = sorted(inlier_matches, key=lambda m: m.distance)
@@ -89,7 +89,7 @@ def _draw_epipolar_lines(img1, img2, F, pts1, pts2, num=15):
     return img1c, img2c
 
 def main():
-    folder = "./images"  
+    folder = "/home/alien/YourDirectoryID_p2/P2Data"  
     img1, img2, p1, p2 = _load_two_images_from_folder(folder)
     print("Using images:\n  1) %s\n  2) %s" % (p1, p2))
 
