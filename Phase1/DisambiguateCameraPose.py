@@ -33,7 +33,7 @@ def disambiguate_cam_poses(K, poses, x1, x2):
         C2 = np.asarray(C2, dtype = np.float32).reshape(3,)
         R2 = np.asarray(R2, dtype = np.float32).reshape(3,3)
 
-        X = triangulate_3d_points(C1, R1, C2, R2, x1, x2)
+        X = triangulate_3d_points(K, C1, R1, C2, R2, x1, x2)
 
         count = chirality_count(C1,R1,C2,R2,X)
 
