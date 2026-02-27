@@ -9,18 +9,18 @@ def reprojection_error(params, X_world, x_image, K):
     Compute the reprojection error for the given camera parameters.
     """
 
-    # Extract rotation and translation from parameters
-    r_vec = params[:3]
-    t_vec = params[3:]
+    # Extract quaternion and camera center from parameters
+    q = params[:4]
+    C = params[4:]
     
     # Normalize quaternion
-    q = r_vec / np.linalg.norm(r_vec)
+    q = q / (np.linalg.norm(q) + 1e-12)
 
     # Convert quaternion to rotation matrix
     R_mat = R.from_quat(q).as_matrix()
 
     # Project 3D points to 2D
-    x_projected = project_points(X_world, R_mat, t_vec, K)
+    x_projected = project_points(X_world, R_mat, C, K)
 
     # Compute reprojection error
     error = (x_projected - x_image).flatten()
@@ -51,7 +51,5 @@ def nonlinear_pnp(X_world, x_image, K, R_initial, C_initial ):
     q_opt = q_opt / np.linalg.norm(q_opt)  # Normalize quaternion
     R_opt = R.from_quat(q_opt).as_matrix()
 
-
-
-    return q_opt, C_opt
+    return R_opt, C_opt
 

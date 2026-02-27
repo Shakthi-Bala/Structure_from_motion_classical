@@ -11,9 +11,10 @@ def make_3d_projection(K, C, R):
     C = C.reshape(3,1)
     I = np.eye(3, dtype = np.float64)
     P = K.dot(R).dot(np.hstack([I, -C]))
+    return P
 
 
-def triangulate_3d_points(C1, R1, C2, R2, x1, x2):
+def triangulate_3d_points(K, C1, R1, C2, R2, x1, x2):
     K = np.asarray(K, dtype=np.float64)
     C1 = np.asarray(C1, dtype=np.float64).reshape(3,)
     C2 = np.asarray(C2, dtype=np.float64).reshape(3,)
