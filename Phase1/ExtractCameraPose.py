@@ -21,15 +21,28 @@ def extract_camera_poses(E):
                   [-1, 0, 0],
                   [0, 0, 1]], dtype=np.float64)
     
-    C = U[:, 2]
-    R1 = U.dot(W).dot(Vt)
-    R2 = U.dot(W.T).dot(Vt)
+    t = U[:, 2]
+
+    R1 = U @ W @ Vt
+    R2 = U @ W.T @ Vt
+
+    # Ensure rotations are valid
+    if np.linalg.det(R1) < 0:
+        R1 = -R1
+    if np.linalg.det(R2) < 0:
+        R2 = -R2
+
+    # Convert translation to camera center
+    C1 = -R1.T @ t
+    C2 = -R1.T @ (-t)
+    C3 = -R2.T @ t
+    C4 = -R2.T @ (-t)
 
     poses = [
-        ( C.copy(), R1.copy()),
-        (-C.copy(), R1.copy()),
-        ( C.copy(), R2.copy()),
-        (-C.copy(), R2.copy()),
+        (C1, R1),
+        (C2, R1),
+        (C3, R2),
+        (C4, R2),
     ]
 
     fixed_poses = []

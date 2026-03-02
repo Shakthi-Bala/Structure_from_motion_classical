@@ -42,4 +42,8 @@ def disambiguate_cam_poses(K, poses, x1, x2):
             best_idx = i
             best_C2, best_R2, best_X = C2, R2, X
     
+    best_C2 = best_C2 / np.linalg.norm(best_C2)
+    scale = np.linalg.norm(best_C2)
+    best_X = best_X / scale
+    
     return best_C2, best_R2, best_X, best_idx

@@ -11,56 +11,49 @@ from LinearTriangulation import triangulate_3d_points
 
 
 def linearpnp(X_sample, x_sample, K):
+
     K = np.asarray(K, dtype=np.float64)
     X_world = np.asarray(X_sample, dtype=np.float64)
     x_image = np.asarray(x_sample, dtype=np.float64)
 
-    
-    N=X_world.shape[0]
+    N = X_world.shape[0]
 
-    # Convert 2d image points to homogeneous coordinates
-    x_h= np.hstack((x_image, np.ones((N, 1), dtype=np.float64)))
+    # Convert 2D to homogeneous
+    x_h = np.hstack((x_image, np.ones((N, 1))))
 
-    # Normalize the 2D image points using the intrinsic matrix
-    x_normalized = np.linalg.inv(K).dot(x_h.T).T
+    # Normalize using intrinsics
+    x_norm = (np.linalg.inv(K) @ x_h.T).T
 
-    # Construct the A matrix for DLT
+    A = []
 
-    A = np.zeros((2 * N, 12), dtype=np.float64)
     for i in range(N):
         X, Y, Z = X_world[i]
-        u, v, _ = x_normalized[i]
+        u, v, _ = x_norm[i]
 
-        
-        # Two equations per point correspondence
-        A[2 * i] = np.hstack((X, Y, Z, 1, 0, 0, 0, 0, -u*X, -u*Y, -u*Z, -u))
-        A[2 * i + 1] = np.hstack((0, 0, 0, 0, X, Y, Z, 1, -v*X, -v*Y, -v*Z, -v))
+        A.append([X, Y, Z, 1, 0, 0, 0, 0, -u*X, -u*Y, -u*Z, -u])
+        A.append([0, 0, 0, 0, X, Y, Z, 1, -v*X, -v*Y, -v*Z, -v])
 
-    # Solve for the projection matrix P using SVD
+    A = np.asarray(A)
+
+    # Solve Ap = 0
     _, _, Vt = np.linalg.svd(A)
     P = Vt[-1].reshape(3, 4)
 
-    # Extract R and C from P
     R = P[:, :3]
     t = P[:, 3]
 
-    # Ensure R is a valid rotation matrix using SVD
-    U, S_R, Vt = np.linalg.svd(R)
-    R = U.dot(Vt)
+    # Enforce R ∈ SO(3)
+    U, _, Vt = np.linalg.svd(R)
+    R = U @ Vt
 
-    # Correct scale of t 
-    scale = np.linalg.norm(R) / np.mean(S_R)
-    t = t * scale
-
-    # Valid R , Determinant should be 1 
     if np.linalg.det(R) < 0:
         R = -R
         t = -t
-    
-    # Compute camera center C 
-    C = -R.T.dot(t)
 
-    return P, R, C
+    # Camera center
+    C = -R.T @ t
+
+    return R, C
 
 
 def project_points(X_world, R, C, K):
@@ -96,8 +89,8 @@ def pnp_ransac(K, X_world, x_image, num_iterations=1000, threshold=5.0, confiden
         X_sample = X_world[indices]
         x_sample = x_image[indices]
 
-        
-        _, R, C = linearpnp(X_sample, x_sample, K )
+        # FIX: Remove the '_, ' because linearpnp only returns R and C
+        R, C = linearpnp(X_sample, x_sample, K)
 
         x_projected = project_points(X_world, R, C, K)
         x_projected = x_projected.reshape(-1, 2)

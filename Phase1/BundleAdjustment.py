@@ -10,8 +10,9 @@ def _unpack(params, n_points):
     C2 = params[4:7]
     X = params[7:].reshape(n_points, 3)
 
-    q = q / (np.linalg.norm(q) + 1e-12)
+    q = q / np.linalg.norm(q)
     R2 = Rot.from_quat(q).as_matrix()
+
     return R2, C2, X
 
 
@@ -24,18 +25,13 @@ def _ba_residual(params, K, C1, R1, x1, x2):
 
     r1 = (x1_proj - x1).reshape(-1)
     r2 = (x2_proj - x2).reshape(-1)
+
     return np.hstack((r1, r2))
 
 
-def bundle_adjust_two_view(K, C1, R1, C2_initial, R2_initial, x1, x2, X_initial):
-    K = np.asarray(K, dtype=np.float64)
-    C1 = np.asarray(C1, dtype=np.float64).reshape(3,)
-    R1 = np.asarray(R1, dtype=np.float64).reshape(3, 3)
-    C2_initial = np.asarray(C2_initial, dtype=np.float64).reshape(3,)
-    R2_initial = np.asarray(R2_initial, dtype=np.float64).reshape(3, 3)
-    x1 = np.asarray(x1, dtype=np.float64)
-    x2 = np.asarray(x2, dtype=np.float64)
-    X_initial = np.asarray(X_initial, dtype=np.float64)
+def bundle_adjust_two_view(K, C1, R1,
+                           C2_initial, R2_initial,
+                           x1, x2, X_initial):
 
     q0 = Rot.from_matrix(R2_initial).as_quat()
     p0 = np.hstack((q0, C2_initial, X_initial.reshape(-1)))
@@ -49,3 +45,39 @@ def bundle_adjust_two_view(K, C1, R1, C2_initial, R2_initial, x1, x2, X_initial)
 
     R2_opt, C2_opt, X_opt = _unpack(res.x, X_initial.shape[0])
     return R2_opt, C2_opt, X_opt
+
+import matplotlib.pyplot as plt
+
+def plot_pointcloud(X_before, X_after, C1, C2_before, C2_after):
+
+    fig = plt.figure(figsize=(8,8))
+    ax = fig.add_subplot(111, projection='3d')
+
+    ax.scatter(
+        X_before[:,0],
+        X_before[:,1],
+        X_before[:,2],
+        s=2,
+        c='blue',
+        label='before bundle adj'
+    )
+
+    ax.scatter(
+        X_after[:,0],
+        X_after[:,1],
+        X_after[:,2],
+        s=2,
+        c='red',
+        label='after bundle adj'
+    )
+
+    # plot cameras
+    ax.scatter(*C1, c='green', s=200)
+    ax.scatter(*C2_before, c='purple', s=200)
+    ax.scatter(*C2_after, c='black', s=200)
+
+    ax.set_xlabel('X')
+    ax.set_ylabel('Y')
+    ax.set_zlabel('Z')
+    ax.legend()
+    plt.show()
